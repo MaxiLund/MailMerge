@@ -1,1 +1,15 @@
-[{'class': 'MailMerge', 'action': 'create', 'tag': '', 'filter_parameters': {}, 'parameters': {'mailmerge_docx': {'$path': ''}}}]
+[
+    {
+        "class": "MailMerge", 
+        "action": "create", 
+        "tag": "", 
+        "filter_parameters": {}, 
+        "parameters": 
+        {
+            "name": "Test",
+            "mailmerge_docx": "submodels/MailMerge/Tests/MailMergeTemplate.docx", 
+            "upload_data": "submodels/MailMerge/Tests/upload_data.xlsx",
+            "calculate": true
+        }
+    }
+]
