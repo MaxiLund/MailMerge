@@ -13,10 +13,10 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
     
     name = TextField(default='')
     mailmerge_docx = FileField(upload_to="submodels/MailMerge/mailmerge_docx/")
-    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/")
-    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/")
-    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/")
-    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/")
+    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='')
+    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/", default='')
+    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/", default='')
+    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/", default='')
     
     def file_path(self):
         return f"submodels/MailMerge/{self.name}"
