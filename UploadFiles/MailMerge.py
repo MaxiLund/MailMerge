@@ -1,4 +1,5 @@
 from datetime import datetime
+from babel.numbers import decimal, format_decimal
 
 from generic_app.models import *
 from ProcessAdminRestApi.models.upload_model import UploadModelMixin, ConditionalUpdateMixin
@@ -10,6 +11,18 @@ import requests
 import concurrent.futures
 from pikepdf import Pdf
 from django.core.files.base import ContentFile
+
+
+class BabelFormatter():
+    def __init__(self, format):
+        self.format = format
+
+    def format_with_babel(self, string_to_format):
+        #TODO implement locale support
+        with decimal.localcontext(decimal.Context(rounding=decimal.ROUND_HALF_UP)):
+            txt = format_decimal(string_to_format, format=self.format, locale='de_DE')
+
+        return txt
 
 class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
     
@@ -29,7 +42,8 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
             merge_fields = ['document_name'] + list(document.get_merge_fields())
             df = pd.DataFrame(columns=merge_fields)
             XLSXField.create_excel_file_from_dfs(self.upload_template, path= "template.xlsx", data_frames=[df])
-            
+
+
     def create_mails(self):
         from generic_app.submodels.MailMerge.MailDocuments.Mail import Mail
         Mail.objects.filter(mail_merge=self).delete()
@@ -38,9 +52,9 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
         formatting = pd.read_excel(self.upload_data, sheet_name='formatting')
         for column in df:
             if column in list(formatting['COLUMN']):
-                format = formatting[formatting['COLUMN']==column]['FORMAT'].iloc[0]
+                format = BabelFormatter(format=formatting[formatting['COLUMN']==column]['FORMAT'].iloc[0])
                 print(column)
-                df[column] = df[column].map(format.format)
+                df[column] = df[column].map(format.format_with_babel)
         for index, row in df.iterrows():
             mail = Mail(mail_merge=self, file_name=row['document_name'])
             mail.save()
