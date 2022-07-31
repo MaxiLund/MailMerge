@@ -8,10 +8,10 @@ class Mail(Model):
     id = AutoField(primary_key=True)
     mail_merge = ForeignKey(to=MailMerge, on_delete=CASCADE)
     file_name = TextField(default='')
-    docx_document = FileField(upload_to="submodels/MailMerge/docx_document/", default='')
-    pdf_document = FileField(upload_to="submodels/MailMerge/pdf_document/", default='')
+    docx_document = FileField(upload_to="submodels/MailMerge/docx_document/", default='', null=True, blank=True)
+    pdf_document = FileField(upload_to="submodels/MailMerge/pdf_document/", default='', null=True, blank=True)
     
-    def create_documents(self, row):
+    def create_documents(self, row, formatting):
         with Merge(self.mail_merge.mailmerge_docx) as document:
             document.merge(**row)
 

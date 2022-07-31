@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from generic_app.models import *
 from ProcessAdminRestApi.models.upload_model import UploadModelMixin, ConditionalUpdateMixin
 from mailmerge import MailMerge as Merge
@@ -14,10 +16,10 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
     id = AutoField(primary_key=True)
     name = TextField(default='')
     mailmerge_docx = FileField(upload_to="submodels/MailMerge/mailmerge_docx/")
-    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='')
-    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/", default='')
-    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/", default='')
-    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/", default='')
+    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='', null=True, blank=True)
+    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/", default='', null=True, blank=True)
+    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True)
+    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True)
     
     def file_path(self):
         return f"submodels/MailMerge/{self.name}"
@@ -30,20 +32,29 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
             
     def create_mails(self):
         from generic_app.submodels.MailMerge.MailDocuments.Mail import Mail
-        columns = pd.read_excel(self.upload_data).columns
-        df = pd.read_excel(self.upload_data, converters={c:str for c in columns})
+        Mail.objects.filter(mail_merge=self).delete()
+        shutil.rmtree(settings.MEDIA_ROOT + os.sep + self.file_path(), ignore_errors=True)
+        df = pd.read_excel(self.upload_data)
+        formatting = pd.read_excel(self.upload_data, sheet_name='formatting')
+        for column in df:
+            if column in list(formatting['COLUMN']):
+                format = formatting[formatting['COLUMN']==column]['FORMAT'].iloc[0]
+                print(column)
+                df[column] = df[column].map(format.format)
         for index, row in df.iterrows():
             mail = Mail(mail_merge=self, file_name=row['document_name'])
             mail.save()
-            mail.create_documents(row)
+            mail.create_documents(row, formatting=formatting)
             mail.save()
 
         # create docx zip
-        result = shutil.make_archive(settings.MEDIA_ROOT + os.sep + self.file_path(), 'zip', settings.MEDIA_ROOT + os.sep + self.file_path())
+        if os.path.exists(settings.MEDIA_ROOT + os.sep + self.file_path() + '_docx.zip'):
+            os.remove(settings.MEDIA_ROOT + os.sep + self.file_path() + '_docx.zip')
+        result = shutil.make_archive(settings.MEDIA_ROOT + os.sep + self.file_path()  + '_docx', 'zip', settings.MEDIA_ROOT + os.sep + self.file_path())
         self.zip_docx.name = self.file_path() + "_docx.zip"
         
 
-    def bulk_create_pdfs_for_cap_account(self):
+    def bulk_create_pdfs_for_mail_merge(self):
         token = MailMerge.exchange_jwt()
         from generic_app.submodels.MailMerge.MailDocuments.Mail import Mail
         mails = Mail.objects.filter(mail_merge=self)
@@ -56,22 +67,27 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(doc_names)) as pool:
             results = pool.map(MailMerge.convert_word_to_pdf, doc_names, [token]*len(doc_names))
 
+
+        shutil.rmtree(settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name, ignore_errors=True)
+
         pdfs = list(results)
         for mail, pdf in zip(mails, pdfs):
             mail.save_pdf(pdf)
             mail.save()
 
         # create pdf zip
-        result = shutil.make_archive(settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name, 'zip', settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name)
-        self.zip_pdf.name = self.file_path() + "_pdf.zip"
+        #if os.path.exists(settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name + '_pdf.zip'):
+        #    os.remove(settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name + '_pdf.zip')
+        result = shutil.make_archive(settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name + '_pdf', 'zip', settings.MEDIA_ROOT + os.sep + "submodels/MailMerge/pdf_document/" + self.name)
+        self.zip_pdf.name = "submodels/MailMerge/pdf_document/" + self.name + '_pdf.zip'
 
 
     @ConditionalUpdateMixin.conditional_calculation
     def update(self):
-        
+
         self.create_template()
         self.create_mails()
-        self.bulk_create_pdfs_for_cap_account()
+        self.bulk_create_pdfs_for_mail_merge()
 
     @staticmethod
     def convert_word_to_pdf(doc_name, token):
