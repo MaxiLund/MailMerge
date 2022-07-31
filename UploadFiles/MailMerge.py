@@ -28,11 +28,11 @@ class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
     
     id = AutoField(primary_key=True)
     name = TextField(default='')
-    mailmerge_docx = FileField(upload_to="submodels/MailMerge/mailmerge_docx/")
-    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='', null=True, blank=True)
-    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/", default='', null=True, blank=True)
-    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True)
-    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True)
+    mailmerge_docx = FileField(upload_to="submodels/MailMerge/mailmerge_docx/", max_length=300)
+    upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='', null=True, blank=True, max_length=300)
+    upload_data = FileField(upload_to="submodels/MailMerge/upload_data/", default='', null=True, blank=True, max_length=300)
+    zip_docx = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True, max_length=300)
+    zip_pdf = FileField(upload_to="submodels/MailMerge/zip_docx/", default='', null=True, blank=True, max_length=300)
     
     def file_path(self):
         return f"submodels/MailMerge/{self.name}"
