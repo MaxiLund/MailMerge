@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 
 class Mail(Model):
     
+    id = AutoField(primary_key=True)
     mail_merge = ForeignKey(to=MailMerge, on_delete=CASCADE)
     file_name = TextField(default='')
     docx_document = FileField(upload_to="submodels/MailMerge/docx_document/", default='')

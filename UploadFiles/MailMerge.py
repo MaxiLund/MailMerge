@@ -11,6 +11,7 @@ from django.core.files.base import ContentFile
 
 class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
     
+    id = AutoField(primary_key=True)
     name = TextField(default='')
     mailmerge_docx = FileField(upload_to="submodels/MailMerge/mailmerge_docx/")
     upload_template = XLSXField(upload_to="submodels/MailMerge/upload_template/", default='')
