@@ -21,4 +21,6 @@ class Mail(Model):
             self.docx_document.name=f"/{self.mail_merge.file_path()}/docx_document/{self.file_name}.docx"
 
     def save_pdf(self, raw_pdf):
-        self.pdf_document.save(f'{self.mail_merge.name}/{self.file_name}.pdf', ContentFile(raw_pdf))
+        pdf_start_position = raw_pdf.decode('latin1').find('%PDF-')
+        pdf_to_save = raw_pdf[pdf_start_position:]
+        self.pdf_document.save(f'{self.mail_merge.name}/{self.file_name}.pdf', ContentFile(pdf_to_save))

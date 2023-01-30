@@ -19,9 +19,11 @@ class BabelFormatter():
 
     def format_with_babel(self, string_to_format):
         #TODO implement locale support
-        with decimal.localcontext(decimal.Context(rounding=decimal.ROUND_HALF_UP)):
-            txt = format_decimal(string_to_format, format=self.format, locale='de_DE')
-
+        try:
+            with decimal.localcontext(decimal.Context(rounding=decimal.ROUND_HALF_UP)):
+                txt = format_decimal(string_to_format, format=self.format, locale='de_DE')
+        except Exception:
+            txt = string_to_format
         return txt
 
 class MailMerge(ConditionalUpdateMixin, UploadModelMixin, Model):
